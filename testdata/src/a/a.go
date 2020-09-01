@@ -11,6 +11,7 @@ func main() {
 	gopher := 3
 	fmt.Println(gopher)
 	fmt.Println("lib.ModPow() = ", lib.ModPow())
+	fmt.Println("lib.ModInv() = ", lib.ModInv())
 	uf := lib.UnionFind{4}
 	fmt.Println(uf.N)
 }

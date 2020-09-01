@@ -1,5 +1,11 @@
 package lib
 
-func ModPow() int64 {
-	return 111
+import (
+  "fmt"
+  "math"
+)
+
+func ModPow() float64 {
+  fmt.Println("hello mod pow")
+	return math.Max(1.0, 2.0)
 }

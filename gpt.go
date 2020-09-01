@@ -6,7 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
-	// "fmt"
+	"fmt"
 	"strconv"
 	"strings"
 	// "reflect"
@@ -36,18 +36,87 @@ func generateCode(node interface{}) {
 
 func run(pass *analysis.Pass) (interface{}, error) {
 
+  // main と lib の imports 文を集計する
+  imports := []*ast.ImportSpec{}
+
+  // a.go 内の import 文を走査
+  for _, f := range pass.Files {
+    for _, spec := range f.Imports {
+      imports = append(imports, spec)
+      path, err := strconv.Unquote(spec.Path.Value)
+
+      // ローカルのライブラリをインポートしていたら読み飛ばす
+      if strings.HasSuffix(path, "lib") {
+        continue
+      }
+      if err != nil {
+        return nil, err
+      }
+    }
+  }
+
+  // lib 内の import 文を走査
+	dir, err := parser.ParseDir(token.NewFileSet(), "testdata/src/a/lib", nil, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range dir {
+		for _, f := range v.Files {
+      for _, spec := range f.Imports {
+        imports = append(imports, spec)
+      }
+		}
+	}
+
 	// main 関数に相当する，a file をよむ
 	f, err := parser.ParseFile(token.NewFileSet(), "testdata/src/a/a.go", nil, 0)
 	if err != nil {
 		return nil, err
 	}
 
+  decls := []ast.Decl{}
+
+	for _, v := range dir {
+		for _, f := range v.Files {
+
+			// package lib を除いたコードを出力（ライブラリ内の import 文は一旦むし）
+      // TODO Aooly ではなく，トラバース
+      m := astutil.Apply(f, func(cr *astutil.Cursor) bool {
+        switch node := cr.Node().(type) {
+        case *ast.GenDecl:
+          if node.Tok != token.IMPORT {
+            decls = append(decls, node)
+          }
+        case *ast.FuncDecl:
+          decls = append(decls, node)
+        }
+
+        return true
+      }, nil)
+
+      fmt.Println("m = ", m)
+		}
+	}
+
+  for _, decl := range decls {
+    fmt.Println(decl)
+    f.Decls = append(f.Decls, decl)
+  }
+
 	// main 関数に対するコードの編集
 	n := astutil.Apply(f, func(cr *astutil.Cursor) bool {
 		switch node := cr.Node().(type) {
+    case *ast.GenDecl:
+      // lib 以下の import を追加していく
+      if node.Tok == token.IMPORT {
+        for _, spec := range imports {
+          node.Specs = append(node.Specs, spec)
+        }
+      }
+
 		case *ast.ImportSpec:
 			// import a/lib など，ローカルからインポートしている文を削除する
-
 			path, err := strconv.Unquote(node.Path.Value)
 			if err != nil {
 				return true
@@ -75,70 +144,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		return true
 	}, nil)
 
-	generateCode(n)
+  generateCode(n)
 
-	// parser.ParseDir を読んで，ディレクトリ単位で ast を得る
-	// fset := token.NewFileSet()
-	d, err := parser.ParseDir(token.NewFileSet(), "testdata/src/a/lib", nil, 0)
-	if err != nil {
-		return nil, err
-	}
 
-	for _, v := range d {
-		for _, file := range v.Files {
-
-			// package lib を除いたコードを出力（ライブラリ内の import 文は一旦むし）
-			generateCode(file.Decls)
-		}
-	}
-
-	/*
-	  // main 内の import 文を捜査
-	  // fmt.Println("len = ", len(pass.Files))
-	  paths := []*string{}
-	  for _, f := range pass.Files {
-	    // fmt.Println("file = ", f)
-	    imports, err := findLocalImports(f)
-	    if err != nil {
-	      return nil, err
-	    }
-	    for _, i := range imports {
-	      paths = append(paths, i)
-	    }
-	  }
-
-	  // 対象ファイルの抽象構文木を取得
-	  for i, path := range paths {
-
-	    fmt.Println("依存ライブラリ ", i)
-	    fmt.Println(*path)
-	    fset := token.NewFileSet()
-	    // f, err := parser.ParseFile(fset, "./testcase/src/" + *path + "/graph.go", nil, 0)
-	    f, err := parser.ParseFile(fset, "testdata/src/a/lib/graph/union_find.go", nil, 0)
-	    if err != nil {
-	      return nil, err
-	    }
-	    fmt.Println(f)
-	  }
-
-		inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
-
-		nodeFilter := []ast.Node{
-			(*ast.Ident)(nil),
-		}
-
-		inspect.Preorder(nodeFilter, func(n ast.Node) {
-			switch n := n.(type) {
-			case *ast.Ident:
-	      // fmt.Println(n)
-				if n.Name == "gopher" {
-	        fmt.Println(n.Name)
-					pass.Reportf(n.Pos(), "identifier is gopher")
-				}
-			}
-		})
-
-	*/
 
 	return nil, nil
 }
