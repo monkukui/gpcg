@@ -3,8 +3,8 @@ package gpt_test
 import (
 	"testing"
 
-	"gpt"
 	"golang.org/x/tools/go/analysis/analysistest"
+	"gpt"
 )
 
 // TestAnalyzer is a test for Analyzer.
