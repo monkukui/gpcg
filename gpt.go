@@ -9,7 +9,10 @@ import (
   // "fmt"
   "strconv"
   "strings"
+  // "reflect"
 
+
+  "golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	// "golang.org/x/tools/go/ast/inspector"
@@ -44,9 +47,8 @@ func findLocalImports(f *ast.File) ([]*string, error) {
   return ret, nil
 }
 
-// ast.File を受け取って，ソースコードを出力する関数
-func generateCodeByFile(file *ast.File) {
-  format.Node(os.Stdout, token.NewFileSet(), file)
+func generateCode(node interface{}) {
+  format.Node(os.Stdout, token.NewFileSet(), node)
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -56,7 +58,28 @@ func run(pass *analysis.Pass) (interface{}, error) {
   if err != nil {
     return nil, err
   }
-  generateCodeByFile(f)
+
+  // lib.HogeHuga -> HogeHuga に置換する
+  n := astutil.Apply(f, func(cr *astutil.Cursor) bool {
+		switch node := cr.Node().(type) {
+		case *ast.SelectorExpr:
+
+      // node.X が 識別子ではない場合は無視
+      ident, ok := node.X.(*ast.Ident)
+      if !ok {
+        return true
+      }
+
+      // 識別子の名前が lib の時は，現在のノードをごっそり node.Sel に置換
+      if ident.Name == "lib" {
+        cr.Replace(node.Sel)
+      }
+    }
+
+    return true
+  }, nil)
+
+  generateCode(n)
 
   // parser.ParseDir を読んで，ディレクトリ単位で ast を得る
   // fset := token.NewFileSet()
@@ -67,7 +90,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
   for _, v := range d {
     for _, file := range v.Files {
-      generateCodeByFile(file)
+      generateCode(file)
     }
   }
 

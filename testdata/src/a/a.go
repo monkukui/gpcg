@@ -14,3 +14,7 @@ func main() {
   uf := lib.UnionFind{4}
   fmt.Println(uf.N)
 }
+
+func ModModPow() int64 {
+  return 1
+}
