@@ -34,14 +34,6 @@ func generateCode(node interface{}) {
 	format.Node(os.Stdout, token.NewFileSet(), node)
 }
 
-func generateEoln() {
-	node, err := parser.ParseExpr("1 + 2")
-	if err != nil {
-		panic(err)
-	}
-	format.Node(os.Stdout, token.NewFileSet(), node)
-}
-
 func run(pass *analysis.Pass) (interface{}, error) {
 
 	// main 関数に相当する，a file をよむ
