@@ -10,7 +10,7 @@ func main() {
 	fmt.Println("World")
   gopher := 3
   fmt.Println(gopher)
-  fmt.Println(lib.ModPow())
+  fmt.Println("lib.ModPow() = ", lib.ModPow())
   uf := lib.UnionFind{4}
   fmt.Println(uf.N)
 }

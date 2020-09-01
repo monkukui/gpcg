@@ -1,5 +1,7 @@
 package lib
 
+import "math"
+
 func ModPow() int64 {
-  return 1000000007
+  return math.MaxInt8
 }
