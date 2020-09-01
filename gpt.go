@@ -31,22 +31,6 @@ var Analyzer = &analysis.Analyzer{
 	},
 }
 
-// Imports を走査し，目的のライブラリに対する import を探す
-func findLocalImports(f *ast.File) ([]*string, error) {
-  ret := []*string{}
-  for _, spec := range f.Imports {
-    path, err := strconv.Unquote(spec.Path.Value)
-    if err != nil {
-      return nil, err
-    }
-
-    if strings.HasPrefix(path, lib) {
-      ret = append(ret, &path)
-    }
-  }
-  return ret, nil
-}
-
 func generateCode(node interface{}) {
   format.Node(os.Stdout, token.NewFileSet(), node)
 }
@@ -59,10 +43,23 @@ func run(pass *analysis.Pass) (interface{}, error) {
     return nil, err
   }
 
-  // lib.HogeHuga -> HogeHuga に置換する
+  // main 関数に対するコードの編集
   n := astutil.Apply(f, func(cr *astutil.Cursor) bool {
 		switch node := cr.Node().(type) {
+    case *ast.ImportSpec:
+      // import a/lib など，ローカルからインポートしている文を削除する
+
+      path, err := strconv.Unquote(node.Path.Value)
+      if err != nil {
+        return true
+      }
+      if strings.HasSuffix(path, "lib") {
+        cr.Delete()
+      }
+
 		case *ast.SelectorExpr:
+      // lib.HogeHuga() -> HogeHuga() に置換する
+      // lib.HogeHuga -> HogeHuga に置換する
 
       // node.X が 識別子ではない場合は無視
       ident, ok := node.X.(*ast.Ident)
