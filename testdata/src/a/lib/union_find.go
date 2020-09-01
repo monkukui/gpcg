@@ -1,4 +1,4 @@
-package graph
+package lib
 
 // 構造体
 type UnionFind struct {
