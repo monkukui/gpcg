@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "a/lib"
 	"fmt"
 )
 
@@ -10,16 +9,17 @@ func main() {
 	fmt.Println("World")
 	gopher := 3
 	fmt.Println(gopher)
-	fmt.Println(ModPow())
+	fmt.Println("lib.ModPow() = ", ModPow())
 	uf := UnionFind{4}
 	fmt.Println(uf.N)
 }
-// package lib
+
+func ModModPow() int64 {
+	return 1
+}
 
 func ModPow() int64 {
-	return 1000000007
+	return 111
 }
-// package lib
 
 type UnionFind struct{ N int }
-
