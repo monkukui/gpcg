@@ -1,20 +1,18 @@
 package gpt
 
 import (
+	"fmt"
 	"go/ast"
 	"go/format"
 	"go/parser"
 	"go/token"
 	"os"
-	"fmt"
 	"strconv"
 	"strings"
 	// "reflect"
 
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/astutil"
-	// "golang.org/x/tools/go/ast/inspector"
 )
 
 const doc = "gpt is ..."
@@ -25,9 +23,6 @@ var Analyzer = &analysis.Analyzer{
 	Name: "gpt",
 	Doc:  doc,
 	Run:  run,
-	Requires: []*analysis.Analyzer{
-		inspect.Analyzer,
-	},
 }
 
 func generateCode(node interface{}) {
@@ -36,84 +31,53 @@ func generateCode(node interface{}) {
 
 func run(pass *analysis.Pass) (interface{}, error) {
 
-  // main と lib の imports 文を集計する
-  imports := []*ast.ImportSpec{}
-
-  // a.go 内の import 文を走査
-  for _, f := range pass.Files {
-    for _, spec := range f.Imports {
-      imports = append(imports, spec)
-      path, err := strconv.Unquote(spec.Path.Value)
-
-      // ローカルのライブラリをインポートしていたら読み飛ばす
-      if strings.HasSuffix(path, "lib") {
-        continue
-      }
-      if err != nil {
-        return nil, err
-      }
-    }
-  }
-
-  // lib 内の import 文を走査
+	// 競技プログラミングライブラリを全て捜査して，必要な情報を取ってくる
 	dir, err := parser.ParseDir(token.NewFileSet(), "testdata/src/a/lib", nil, 0)
 	if err != nil {
 		return nil, err
 	}
 
+	// import 文を集計する
+	imports := []*ast.ImportSpec{}
 	for _, v := range dir {
 		for _, f := range v.Files {
-      for _, spec := range f.Imports {
-        imports = append(imports, spec)
-      }
+			for _, spec := range f.Imports {
+				imports = append(imports, spec)
+			}
 		}
 	}
 
-	// main 関数に相当する，a file をよむ
-	f, err := parser.ParseFile(token.NewFileSet(), "testdata/src/a/a.go", nil, 0)
-	if err != nil {
-		return nil, err
-	}
-
-  decls := []ast.Decl{}
-
+	// decl を集計する
+	decls := []ast.Decl{}
 	for _, v := range dir {
 		for _, f := range v.Files {
+			ast.Inspect(f, func(n ast.Node) bool {
+				switch n := n.(type) {
+				case *ast.GenDecl:
+					// インポート文以外を全て集計
+					if n.Tok != token.IMPORT {
+						decls = append(decls, n)
+					}
+				case *ast.FuncDecl:
+					// 関数定義は全て集計
+					decls = append(decls, n)
+				}
 
-			// package lib を除いたコードを出力（ライブラリ内の import 文は一旦むし）
-      // TODO Aooly ではなく，トラバース
-      m := astutil.Apply(f, func(cr *astutil.Cursor) bool {
-        switch node := cr.Node().(type) {
-        case *ast.GenDecl:
-          if node.Tok != token.IMPORT {
-            decls = append(decls, node)
-          }
-        case *ast.FuncDecl:
-          decls = append(decls, node)
-        }
-
-        return true
-      }, nil)
-
-      fmt.Println("m = ", m)
+				return true
+			})
 		}
 	}
-
-  for _, decl := range decls {
-    fmt.Println(decl)
-    f.Decls = append(f.Decls, decl)
-  }
 
 	// main 関数に対するコードの編集
-	n := astutil.Apply(f, func(cr *astutil.Cursor) bool {
+	mainFile := pass.Files[0]
+
+	n := astutil.Apply(mainFile, func(cr *astutil.Cursor) bool {
 		switch node := cr.Node().(type) {
-    case *ast.GenDecl:
-      // lib 以下の import を追加していく
-      if node.Tok == token.IMPORT {
-        for _, spec := range imports {
-          node.Specs = append(node.Specs, spec)
-        }
-      }
+		case *ast.GenDecl:
+			// Decl の一番最初の時，蓄えた decl 文を後ろに挿入していく
+			for _, spec := range decls {
+				cr.InsertAfter(spec)
+			}
 
 		case *ast.ImportSpec:
 			// import a/lib など，ローカルからインポートしている文を削除する
@@ -123,6 +87,13 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			}
 			if strings.HasSuffix(path, "lib") {
 				cr.Delete()
+			}
+
+			// ImportSpec の一番最初の時，蓄えた import 文を後ろに挿入していく
+			if cr.Index() == 0 {
+				for _, spec := range imports {
+					cr.InsertAfter(spec)
+				}
 			}
 
 		case *ast.SelectorExpr:
@@ -144,9 +115,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		return true
 	}, nil)
 
-  generateCode(n)
-
-
-
+	// コードを生成して終了
+	fmt.Println("code gen begin")
+	fmt.Println("-------------------------")
+	generateCode(n)
+	fmt.Println("-------------------------")
+	fmt.Println("code gen end")
 	return nil, nil
 }
