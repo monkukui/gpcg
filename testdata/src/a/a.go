@@ -1,21 +1,31 @@
 package main
 
 import (
-	"a/lib"
 	"fmt"
+
+	"a/lib"
 )
 
 func main() {
-	fmt.Println("Hello")
-	fmt.Println("World")
-	gopher := 3
-	fmt.Println(gopher)
-	fmt.Println("lib.ModPow() = ", lib.ModPow())
-	fmt.Println("lib.ModInv() = ", lib.ModInv())
-	uf := lib.UnionFind{4}
-	fmt.Println(uf.N)
-}
+	var n, m int
+	fmt.Scan(&n, &m)
+	uf := lib.NewUnionFind(n)
 
-func ModModPow() int64 {
-	return 1
+	for i := 0; i < m; i++ {
+		var a, b int
+		fmt.Scan(&a, &b)
+		a--
+		b--
+
+		uf.Union(a, b)
+	}
+
+	ans := 0
+	for i := 0; i < n; i++ {
+		if ans < uf.Size(i) {
+			ans = uf.Size(i)
+		}
+	}
+
+	fmt.Println(ans)
 }
