@@ -71,13 +71,20 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	// main 関数に対するコードの編集
 	mainFile := pass.Files[0]
 
+	insertImportsFlag := false
+	insertDeclsFlag := false
+	ast.Print(nil, mainFile)
 	n := astutil.Apply(mainFile, func(cr *astutil.Cursor) bool {
 		switch node := cr.Node().(type) {
 		case *ast.GenDecl:
 			// Decl の一番最初の時，蓄えた decl 文を後ろに挿入していく
+			if insertDeclsFlag {
+				return true
+			}
 			for _, spec := range decls {
 				cr.InsertAfter(spec)
 			}
+			insertDeclsFlag = true
 
 		case *ast.ImportSpec:
 			// import a/lib など，ローカルからインポートしている文を削除する
@@ -90,11 +97,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			}
 
 			// ImportSpec の一番最初の時，蓄えた import 文を後ろに挿入していく
+			if insertImportsFlag {
+				return true
+			}
 			if cr.Index() == 0 {
 				for _, spec := range imports {
 					cr.InsertAfter(spec)
 				}
 			}
+			insertImportsFlag = true
 
 		case *ast.SelectorExpr:
 			// lib.HogeHuga() -> HogeHuga() に置換する
