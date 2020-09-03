@@ -61,3 +61,15 @@ func UnUsedFunction() string {
 func unUsedFunction() string {
 	return "I am unused unexported function"
 }
+
+// token.VAR
+var hoge = 10
+
+// token.CONST
+const huga = 100
+
+var (
+	v1 = 1
+	v2 = 2
+	v3 = 3
+)
