@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	// "reflect"
 	// "bufio"
 
 	"go/ast"
@@ -31,6 +32,10 @@ func generateCode(w io.Writer, node interface{}) {
 	format.Node(w, token.NewFileSet(), node)
 }
 
+func rename(name *string, packageName string) {
+	*name = "generated_" + packageName + "_" + *name
+}
+
 func run(pass *analysis.Pass) (interface{}, error) {
 
 	// 競技プログラミングライブラリを全て捜査して，必要な情報を取ってくる
@@ -53,15 +58,62 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	var decls []ast.Decl
 	for _, v := range dir {
 		for _, f := range v.Files {
+
+			packageName := f.Name.Name
 			ast.Inspect(f, func(n ast.Node) bool {
 				switch n := n.(type) {
 				case *ast.GenDecl:
 					// インポート文以外を全て集計
-					if n.Tok != token.IMPORT {
-						decls = append(decls, n)
+					switch n.Tok {
+					case token.IMPORT:
+						return true
+					case token.TYPE:
+						for _, spec := range n.Specs {
+							spec, _ := spec.(*ast.TypeSpec)
+							if spec == nil {
+								return true
+							}
+							rename(&spec.Name.Name, packageName)
+						}
+					case token.CONST:
+						for _, spec := range n.Specs {
+							spec, _ := spec.(*ast.ValueSpec)
+							if spec == nil {
+								return true
+							}
+							for _, ident := range spec.Names {
+								rename(&ident.Name, packageName)
+							}
+						}
+					case token.VAR:
+						for _, spec := range n.Specs {
+							spec, _ := spec.(*ast.ValueSpec)
+							if spec == nil {
+								return true
+							}
+							for _, ident := range spec.Names {
+								rename(&ident.Name, packageName)
+							}
+						}
 					}
+
+					decls = append(decls, n)
 				case *ast.FuncDecl:
 					// 関数定義は全て集計
+					if n.Recv != nil {
+						// レシーバ名を変更
+						for _, field := range n.Recv.List {
+							ident := field.Type.(*ast.Ident)
+							if ident == nil {
+								return true
+							}
+							rename(&ident.Name, packageName)
+						}
+					} else {
+						// レシーバを持たない関数（構造体のメンバ変数以外）は，関数名を変更
+						rename(&n.Name.Name, packageName)
+
+					}
 					decls = append(decls, n)
 				}
 

@@ -7,22 +7,32 @@ import (
 	"os"
 )
 
-func unUsedFunction() string {
+var (
+	generated_lib_v1 = 1
+	generated_lib_v2 = 2
+	generated_lib_v3 = 3
+)
+
+const generated_lib_huga = 100
+
+var generated_lib_hoge = 10
+
+func generated_lib_unUsedFunction() string {
 	return "I am unused unexported function"
 }
-func UnUsedFunction() string {
+func generated_lib_UnUsedFunction() string {
 	return "I am unused exported function"
 }
-func swap(a int, b int) (int, int) {
+func generated_lib_swap(a int, b int) (int, int) {
 	return b, a
 }
-func (u UnionFind) Size(x int) int {
+func (u generated_lib_UnionFind) Size(x int) int {
 	return -u.par[u.Find(x)]
 }
-func (u UnionFind) Same(x, y int) bool {
+func (u generated_lib_UnionFind) Same(x, y int) bool {
 	return u.Find(x) == u.Find(y)
 }
-func (u UnionFind) Union(x, y int) {
+func (u generated_lib_UnionFind) Union(x, y int) {
 	xr := u.Find(x)
 	yr := u.Find(y)
 	if xr == yr {
@@ -34,14 +44,14 @@ func (u UnionFind) Union(x, y int) {
 	u.par[yr] += u.par[xr]
 	u.par[xr] = yr
 }
-func (u UnionFind) Find(x int) int {
+func (u generated_lib_UnionFind) Find(x int) int {
 	if u.par[x] < 0 {
 		return x
 	}
 	u.par[x] = u.Find(u.par[x])
 	return u.par[x]
 }
-func NewUnionFind(N int) *UnionFind {
+func generated_lib_NewUnionFind(N int) *UnionFind {
 	u := new(UnionFind)
 	u.par = make([]int, N)
 	for i := range u.par {
@@ -50,9 +60,9 @@ func NewUnionFind(N int) *UnionFind {
 	return u
 }
 
-type UnionFind struct{ par []int }
+type generated_lib_UnionFind struct{ par []int }
 
-func ModPow() int64 {
+func generated_lib_ModPow() int64 {
 	return int64(math.Max(1, 3))
 }
 func main() {
@@ -76,4 +86,7 @@ func main() {
 		}
 	}
 	fmt.Fprintln(w, ans)
+}
+func swap(a int, b int) (int, int) {
+	return 10 * b, 10 * a
 }

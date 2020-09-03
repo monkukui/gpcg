@@ -35,3 +35,7 @@ func main() {
 
 	fmt.Fprintln(w, ans)
 }
+
+func swap(a int, b int) (int, int) {
+	return 10 * b, 10 * a
+}
