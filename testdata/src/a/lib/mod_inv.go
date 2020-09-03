@@ -1,13 +1,7 @@
 package lib
 
-import (
-	"fmt"
-	"math"
-	"strconv"
-)
+import "math"
 
-func ModInv() float64 {
-	fmt.Println("hello mod inv")
-	fmt.Println(strconv.Atoi("122"))
-	return math.Min(1.0, 2.0)
+func ModPow() int64 {
+	return int64(math.Max(1, 3))
 }

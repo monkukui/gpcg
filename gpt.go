@@ -2,14 +2,16 @@ package gpt
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"strconv"
+	"strings"
+	// "bufio"
+
 	"go/ast"
 	"go/format"
 	"go/parser"
 	"go/token"
-	"os"
-	"strconv"
-	"strings"
-	// "reflect"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/ast/astutil"
@@ -25,8 +27,8 @@ var Analyzer = &analysis.Analyzer{
 	Run:  run,
 }
 
-func generateCode(node interface{}) {
-	format.Node(os.Stdout, token.NewFileSet(), node)
+func generateCode(w io.Writer, node interface{}) {
+	format.Node(w, token.NewFileSet(), node)
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -38,7 +40,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	// import 文を集計する
-	imports := []*ast.ImportSpec{}
+	var imports []*ast.ImportSpec
 	for _, v := range dir {
 		for _, f := range v.Files {
 			for _, spec := range f.Imports {
@@ -48,7 +50,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	// decl を集計する
-	decls := []ast.Decl{}
+	var decls []ast.Decl
 	for _, v := range dir {
 		for _, f := range v.Files {
 			ast.Inspect(f, func(n ast.Node) bool {
@@ -73,7 +75,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 	insertImportsFlag := false
 	insertDeclsFlag := false
-	ast.Print(nil, mainFile)
 	n := astutil.Apply(mainFile, func(cr *astutil.Cursor) bool {
 		switch node := cr.Node().(type) {
 		case *ast.GenDecl:
@@ -127,10 +128,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}, nil)
 
 	// コードを生成して終了
-	fmt.Println("code gen begin")
-	fmt.Println("-------------------------")
-	generateCode(n)
-	fmt.Println("-------------------------")
-	fmt.Println("code gen end")
+	fmt.Println("// code gen begin")
+	fmt.Println("// -------------------------")
+	generateCode(os.Stdout, n)
+	fmt.Println("// -------------------------")
+	fmt.Println("// code gen end")
 	return nil, nil
 }

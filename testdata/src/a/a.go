@@ -1,19 +1,25 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"a/lib"
 )
 
 func main() {
+	r := bufio.NewReader(os.Stdin)
+	w := bufio.NewWriter(os.Stdout)
+	defer w.Flush()
+
 	var n, m int
-	fmt.Scan(&n, &m)
+	fmt.Fscan(r, &n, &m)
 	uf := lib.NewUnionFind(n)
 
 	for i := 0; i < m; i++ {
 		var a, b int
-		fmt.Scan(&a, &b)
+		fmt.Fscan(r, &a, &b)
 		a--
 		b--
 
@@ -27,5 +33,5 @@ func main() {
 		}
 	}
 
-	fmt.Println(ans)
+	fmt.Fprintln(w, ans)
 }

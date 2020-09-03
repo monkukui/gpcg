@@ -30,6 +30,9 @@ func (u UnionFind) Union(x, y int) {
 	if xr == yr {
 		return
 	}
+	if u.Size(yr) < u.Size(xr) {
+		yr, xr = swap(yr, xr)
+	}
 	u.par[yr] += u.par[xr]
 	u.par[xr] = yr
 }
@@ -42,4 +45,19 @@ func (u UnionFind) Same(x, y int) bool {
 /* xの所属するグループの木の大きさを返す */
 func (u UnionFind) Size(x int) int {
 	return -u.par[u.Find(x)]
+}
+
+// not exported but used
+func swap(a int, b int) (int, int) {
+	return b, a
+}
+
+// exported but not used
+func UnUsedFunction() string {
+	return "I am unused exported function"
+}
+
+// not exported and not used
+func unUsedFunction() string {
+	return "I am unused unexported function"
 }
