@@ -1,7 +1,7 @@
 package gpt
 
 import (
-	"fmt"
+	// "fmt"
 	"io"
 	"os"
 	"strconv"
@@ -127,11 +127,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		return true
 	}, nil)
 
+	// 標準出力ではなく，file 出力にしたい
+
 	// コードを生成して終了
-	fmt.Println("// code gen begin")
-	fmt.Println("// -------------------------")
-	generateCode(os.Stdout, n)
-	fmt.Println("// -------------------------")
-	fmt.Println("// code gen end")
+	file, err := os.Create("./gen/gen.go")
+	defer file.Close()
+	if err != nil {
+		return nil, err
+	}
+	generateCode(file, n)
+
 	return nil, nil
 }

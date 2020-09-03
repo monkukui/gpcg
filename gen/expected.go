@@ -1,14 +1,20 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math"
-	"strconv"
+	"os"
 )
 
-func ModPow() float64 {
-	fmt.Println("hello mod pow")
-	return math.Max(1.0, 2.0)
+func unUsedFunction() string {
+	return "I am unused unexported function"
+}
+func UnUsedFunction() string {
+	return "I am unused exported function"
+}
+func swap(a int, b int) (int, int) {
+	return b, a
 }
 func (u UnionFind) Size(x int) int {
 	return -u.par[u.Find(x)]
@@ -21,6 +27,9 @@ func (u UnionFind) Union(x, y int) {
 	yr := u.Find(y)
 	if xr == yr {
 		return
+	}
+	if u.Size(yr) < u.Size(xr) {
+		yr, xr = swap(yr, xr)
 	}
 	u.par[yr] += u.par[xr]
 	u.par[xr] = yr
@@ -43,18 +52,19 @@ func NewUnionFind(N int) *UnionFind {
 
 type UnionFind struct{ par []int }
 
-func ModInv() float64 {
-	fmt.Println("hello mod inv")
-	fmt.Println(strconv.Atoi("122"))
-	return math.Min(1.0, 2.0)
+func ModPow() int64 {
+	return int64(math.Max(1, 3))
 }
 func main() {
+	r := bufio.NewReader(os.Stdin)
+	w := bufio.NewWriter(os.Stdout)
+	defer w.Flush()
 	var n, m int
-	fmt.Scan(&n, &m)
+	fmt.Fscan(r, &n, &m)
 	uf := NewUnionFind(n)
 	for i := 0; i < m; i++ {
 		var a, b int
-		fmt.Scan(&a, &b)
+		fmt.Fscan(r, &a, &b)
 		a--
 		b--
 		uf.Union(a, b)
@@ -65,5 +75,5 @@ func main() {
 			ans = uf.Size(i)
 		}
 	}
-	fmt.Println(ans)
+	fmt.Fprintln(w, ans)
 }
