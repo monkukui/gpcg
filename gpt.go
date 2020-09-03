@@ -3,15 +3,20 @@ package gpt
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strconv"
 	"strings"
+	// "reflect"
 	// "bufio"
+	// "bytes"
 
 	"go/ast"
 	"go/format"
+	"go/importer"
 	"go/parser"
 	"go/token"
+	"go/types"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/ast/astutil"
@@ -39,6 +44,8 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		return nil, err
 	}
 
+	fmt.Println(len(pass.Files))
+
 	// import 文を集計する
 	var imports []*ast.ImportSpec
 	for _, v := range dir {
@@ -49,10 +56,92 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		}
 	}
 
-	// decl を集計する
+	// -----
+
+	const code = `
+package p
+
+type I interface{
+	Hoge() string
+}
+
+type S struct {
+}
+
+func (s *S) Hoge() string{
+	return ""
+}
+
+type Y struct {
+}
+
+func (y Y) Error() string{
+	return ""
+}
+
+`
+
+	fmt.Println("sample finish")
+
+	// ----
 	var decls []ast.Decl
 	for _, v := range dir {
 		for _, f := range v.Files {
+			fset := token.NewFileSet()
+
+			conf := types.Config{
+				Importer: importer.Default(),
+				Error: func(err error) {
+					fmt.Printf("!!! %#v\n", err)
+				},
+			}
+
+			info := &types.Info{
+				// Types: map[ast.Expr]types.TypeAndValue{},
+				Defs: map[*ast.Ident]types.Object{},
+				// Uses:  map[*ast.Ident]types.Object{},
+			}
+
+			pkg, err := conf.Check("p", fset, []*ast.File{f}, info) // FIXME: ここで panic が発生する
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			/* TODO: pkgやinfoを使う処理 */
+			fmt.Println("success")
+			fmt.Println("pkg = ", pkg)
+
+			// 名前が衝突しないように，全ての識別子を置き換える
+			// ただし，基本型は除く
+			ast.Inspect(f, func(n ast.Node) bool {
+				ident, _ := n.(*ast.Ident)
+				if ident == nil {
+					return true
+				}
+				// fmt.Println("ident = ", ident)
+
+				expr, _ := n.(ast.Expr)
+				if expr == nil {
+					return true
+				}
+				// fmt.Println("expr = ", expr)
+
+				objType := pass.TypesInfo.TypeOf(expr)
+				// fmt.Println("objType = ", objType)
+				// fmt.Println("types.Typ[types.Int] = ", types.Typ[types.Int])
+				if types.Identical(objType, types.Typ[types.Int]) {
+					// fmt.Println("ident = ", ident)
+					return true
+				}
+				// if ident.(type) == ast.Expr {
+				// fmt.Println("expr!!!!")
+				// }
+
+				// fmt.Println("rename ident = ", ident)
+				return true
+			})
+
+			// decl を集計する
 			ast.Inspect(f, func(n ast.Node) bool {
 				switch n := n.(type) {
 				case *ast.GenDecl:
@@ -64,7 +153,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					// 関数定義は全て集計
 					decls = append(decls, n)
 				}
-
 				return true
 			})
 		}

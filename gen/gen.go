@@ -7,54 +7,32 @@ import (
 	"os"
 )
 
-func unUsedFunction() string {
-	return "I am unused unexported function"
-}
-func UnUsedFunction() string {
-	return "I am unused exported function"
-}
-func swap(a int, b int) (int, int) {
-	return b, a
-}
-func (u UnionFind) Size(x int) int {
-	return -u.par[u.Find(x)]
-}
-func (u UnionFind) Same(x, y int) bool {
-	return u.Find(x) == u.Find(y)
-}
-func (u UnionFind) Union(x, y int) {
-	xr := u.Find(x)
-	yr := u.Find(y)
-	if xr == yr {
-		return
-	}
-	if u.Size(yr) < u.Size(xr) {
-		yr, xr = swap(yr, xr)
-	}
-	u.par[yr] += u.par[xr]
-	u.par[xr] = yr
-}
-func (u UnionFind) Find(x int) int {
-	if u.par[x] < 0 {
-		return x
-	}
-	u.par[x] = u.Find(u.par[x])
-	return u.par[x]
-}
-func NewUnionFind(N int) *UnionFind {
-	u := new(UnionFind)
-	u.par = make([]int, N)
-	for i := range u.par {
-		u.par[i] = -1
-	}
-	return u
+func (y Y) Error() string {
+	return ""
 }
 
-type UnionFind struct{ par []int }
+type Y struct{}
 
-func ModPow() int64 {
-	return int64(math.Max(1, 3))
+func (s *S) Hoge() string {
+	return ""
 }
+
+type S struct{}
+type I interface{ Hoge() string }
+
+func (y Y) Error() string {
+	return ""
+}
+
+type Y struct{}
+
+func (s *S) Hoge() string {
+	return ""
+}
+
+type S struct{}
+type I interface{ Hoge() string }
+
 func main() {
 	r := bufio.NewReader(os.Stdin)
 	w := bufio.NewWriter(os.Stdout)

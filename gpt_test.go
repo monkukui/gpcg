@@ -14,6 +14,7 @@ import (
 func TestAnalyzer(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, gpt.Analyzer, "a")
+
 	generatedFile, err := os.Open("./gen/gen.go")
 	defer generatedFile.Close()
 	if err != nil {
