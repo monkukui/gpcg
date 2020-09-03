@@ -1,20 +1,20 @@
 package gpt
 
 import (
+	"fmt"
+	"io"
+	"os"
+	"strconv"
+	"strings"
+	// "bufio"
+
 	"go/ast"
 	"go/format"
 	"go/parser"
 	"go/token"
-	"os"
-	// "fmt"
-	"strconv"
-	"strings"
-	// "reflect"
 
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/astutil"
-	// "golang.org/x/tools/go/ast/inspector"
 )
 
 const doc = "gpt is ..."
@@ -25,37 +25,70 @@ var Analyzer = &analysis.Analyzer{
 	Name: "gpt",
 	Doc:  doc,
 	Run:  run,
-	Requires: []*analysis.Analyzer{
-		inspect.Analyzer,
-	},
 }
 
-func generateCode(node interface{}) {
-	format.Node(os.Stdout, token.NewFileSet(), node)
-}
-
-func generateEoln() {
-	node, err := parser.ParseExpr("1 + 2")
-	if err != nil {
-		panic(err)
-	}
-	format.Node(os.Stdout, token.NewFileSet(), node)
+func generateCode(w io.Writer, node interface{}) {
+	format.Node(w, token.NewFileSet(), node)
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
 
-	// main 関数に相当する，a file をよむ
-	f, err := parser.ParseFile(token.NewFileSet(), "testdata/src/a/a.go", nil, 0)
+	// 競技プログラミングライブラリを全て捜査して，必要な情報を取ってくる
+	dir, err := parser.ParseDir(token.NewFileSet(), "testdata/src/a/lib", nil, 0)
 	if err != nil {
 		return nil, err
 	}
 
+	// import 文を集計する
+	var imports []*ast.ImportSpec
+	for _, v := range dir {
+		for _, f := range v.Files {
+			for _, spec := range f.Imports {
+				imports = append(imports, spec)
+			}
+		}
+	}
+
+	// decl を集計する
+	var decls []ast.Decl
+	for _, v := range dir {
+		for _, f := range v.Files {
+			ast.Inspect(f, func(n ast.Node) bool {
+				switch n := n.(type) {
+				case *ast.GenDecl:
+					// インポート文以外を全て集計
+					if n.Tok != token.IMPORT {
+						decls = append(decls, n)
+					}
+				case *ast.FuncDecl:
+					// 関数定義は全て集計
+					decls = append(decls, n)
+				}
+
+				return true
+			})
+		}
+	}
+
 	// main 関数に対するコードの編集
-	n := astutil.Apply(f, func(cr *astutil.Cursor) bool {
+	mainFile := pass.Files[0]
+
+	insertImportsFlag := false
+	insertDeclsFlag := false
+	n := astutil.Apply(mainFile, func(cr *astutil.Cursor) bool {
 		switch node := cr.Node().(type) {
+		case *ast.GenDecl:
+			// Decl の一番最初の時，蓄えた decl 文を後ろに挿入していく
+			if insertDeclsFlag {
+				return true
+			}
+			for _, spec := range decls {
+				cr.InsertAfter(spec)
+			}
+			insertDeclsFlag = true
+
 		case *ast.ImportSpec:
 			// import a/lib など，ローカルからインポートしている文を削除する
-
 			path, err := strconv.Unquote(node.Path.Value)
 			if err != nil {
 				return true
@@ -63,6 +96,17 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			if strings.HasSuffix(path, "lib") {
 				cr.Delete()
 			}
+
+			// ImportSpec の一番最初の時，蓄えた import 文を後ろに挿入していく
+			if insertImportsFlag {
+				return true
+			}
+			if cr.Index() == 0 {
+				for _, spec := range imports {
+					cr.InsertAfter(spec)
+				}
+			}
+			insertImportsFlag = true
 
 		case *ast.SelectorExpr:
 			// lib.HogeHuga() -> HogeHuga() に置換する
@@ -83,70 +127,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		return true
 	}, nil)
 
-	generateCode(n)
-
-	// parser.ParseDir を読んで，ディレクトリ単位で ast を得る
-	// fset := token.NewFileSet()
-	d, err := parser.ParseDir(token.NewFileSet(), "testdata/src/a/lib", nil, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, v := range d {
-		for _, file := range v.Files {
-
-			// package lib を除いたコードを出力（ライブラリ内の import 文は一旦むし）
-			generateCode(file.Decls)
-		}
-	}
-
-	/*
-	  // main 内の import 文を捜査
-	  // fmt.Println("len = ", len(pass.Files))
-	  paths := []*string{}
-	  for _, f := range pass.Files {
-	    // fmt.Println("file = ", f)
-	    imports, err := findLocalImports(f)
-	    if err != nil {
-	      return nil, err
-	    }
-	    for _, i := range imports {
-	      paths = append(paths, i)
-	    }
-	  }
-
-	  // 対象ファイルの抽象構文木を取得
-	  for i, path := range paths {
-
-	    fmt.Println("依存ライブラリ ", i)
-	    fmt.Println(*path)
-	    fset := token.NewFileSet()
-	    // f, err := parser.ParseFile(fset, "./testcase/src/" + *path + "/graph.go", nil, 0)
-	    f, err := parser.ParseFile(fset, "testdata/src/a/lib/graph/union_find.go", nil, 0)
-	    if err != nil {
-	      return nil, err
-	    }
-	    fmt.Println(f)
-	  }
-
-		inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
-
-		nodeFilter := []ast.Node{
-			(*ast.Ident)(nil),
-		}
-
-		inspect.Preorder(nodeFilter, func(n ast.Node) {
-			switch n := n.(type) {
-			case *ast.Ident:
-	      // fmt.Println(n)
-				if n.Name == "gopher" {
-	        fmt.Println(n.Name)
-					pass.Reportf(n.Pos(), "identifier is gopher")
-				}
-			}
-		})
-
-	*/
-
+	// コードを生成して終了
+	fmt.Println("// code gen begin")
+	fmt.Println("// -------------------------")
+	generateCode(os.Stdout, n)
+	fmt.Println("// -------------------------")
+	fmt.Println("// code gen end")
 	return nil, nil
 }
