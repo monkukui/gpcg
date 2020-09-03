@@ -1,7 +1,7 @@
 package gpt
 
 import (
-	// "fmt"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -136,6 +136,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		return nil, err
 	}
 	generateCode(file, n)
+	fmt.Println("gpt: generate code successfully✨")
 
 	return nil, nil
 }

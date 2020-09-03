@@ -1,7 +1,6 @@
 package gpt_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -15,10 +14,6 @@ import (
 func TestAnalyzer(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, gpt.Analyzer, "a")
-}
-
-func TestCodeGenerate(t *testing.T) {
-
 	generatedFile, err := os.Open("./gen/gen.go")
 	defer generatedFile.Close()
 	if err != nil {
