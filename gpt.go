@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	// "sync"
 	// "reflect"
 	// "bufio"
 	// "bytes"
@@ -93,7 +94,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			ast.Inspect(f, func(n ast.Node) bool {
 				switch n := n.(type) {
 				case *ast.Ident:
-					// fmt.Println("ident = ", n)
 					if obj := packageScope.Lookup(n.Name); obj != nil {
 						rename(&n.Name, packageName)
 					}
@@ -216,7 +216,96 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		return true
 	}, nil)
 
-	// 標準出力ではなく，file 出力にしたい
+	conf := types.Config{
+		Importer: importer.Default(),
+		Error: func(err error) {
+			fmt.Printf("!!! %#v\n", err)
+		},
+	}
+
+	info := &types.Info{
+		Types:  map[ast.Expr]types.TypeAndValue{},
+		Defs:   map[*ast.Ident]types.Object{},
+		Uses:   map[*ast.Ident]types.Object{},
+		Scopes: map[ast.Node]*types.Scope{},
+	}
+
+	ff, _ := n.(*ast.File)
+	if ff == nil {
+		panic("file じゃありません")
+	}
+	_, err = conf.Check("lib", pass.Fset, []*ast.File{ff}, info)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// ここから，定義だけされているが使われていない，関数，構造体，変数を消していく
+	m := astutil.Apply(n, func(cr *astutil.Cursor) bool {
+		switch node := cr.Node().(type) {
+		case *ast.FuncDecl:
+			// 関数定義
+			if !isUsed(info, node.Name) {
+				cr.Delete()
+			}
+
+		case *ast.GenDecl:
+			switch node.Tok {
+			case token.IMPORT:
+				return true
+			case token.TYPE:
+				// 構造体の定義を rename
+				for _, spec := range node.Specs {
+					spec, _ := spec.(*ast.TypeSpec)
+					if spec == nil {
+						return true
+					}
+					if !isUsed(info, spec.Name) {
+						cr.Delete()
+						return true
+					}
+				}
+			case token.CONST:
+				// 変数定義を rename
+				for _, spec := range node.Specs {
+					spec, _ := spec.(*ast.ValueSpec)
+					if spec == nil {
+						return true
+					}
+					for _, ident := range spec.Names {
+						if !isUsed(info, ident) {
+							cr.Delete()
+							return true
+						}
+					}
+				}
+			case token.VAR:
+				// 変数定義を rename
+				for _, spec := range node.Specs {
+					spec, _ := spec.(*ast.ValueSpec)
+					if spec == nil {
+						return true
+					}
+					for _, ident := range spec.Names {
+						if !isUsed(info, ident) {
+							cr.Delete()
+							return true
+						}
+					}
+				}
+			}
+		}
+		/*ident, _ := cr.Node().(*ast.Ident)
+		  if ident == nil {
+		    return true
+		  }
+
+		  if !isUsed(info, ident) {
+		    fmt.Println("ident = ", ident)
+		  }
+		*/
+
+		return true
+	}, nil)
 
 	// コードを生成して終了
 	file, err := os.Create("./gen/gen.go")
@@ -224,8 +313,33 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	generateCode(file, n)
+	generateCode(file, m)
 	fmt.Println("gpt: generate code successfully✨")
 
 	return nil, nil
+}
+
+func isUsed(info *types.Info, ident *ast.Ident) bool {
+	obj := info.ObjectOf(ident)
+	switch obj := obj.(type) {
+	case *types.Func:
+		// main
+		if obj.Name() == "main" {
+			return true
+		}
+
+		// init
+		if obj.Name() == "init" {
+			return true
+		}
+	}
+
+	// どこかで使われているか
+	for _, o := range info.Uses {
+		if o == obj {
+			return true
+		}
+	}
+
+	return false
 }
