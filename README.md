@@ -1,6 +1,29 @@
 # gpt（go-procon-tools）
 
-`gpt` combine multiple files into oneA
+`gpt` combine multiple files into one
+
+以下のような構造の，複数ファイルにまたがるコードを一つにまとめる．
+
+```
+testdata/src
+└── a
+    ├── a.go // コンテスト中に書くコード
+    ├── expected
+    │   └── expected.go
+    ├── go.mod
+    └── lib  // 事前に書いている，競プロ用のアルゴリズムライブラリ
+        ├── mod_inv.go
+        └── union_find.go
+```
+
+## 主な機能
+- `a.go` で使用している，1.関数，2.構造体，3.変数を `a.go` に追加する形でコード生成
+    - 使っていないものは弾く
+- `lib` 以下で定義された識別子については，名前の衝突を避けるために `generated_lib_` を `prefix` に追加
+- `a.go` で `lib.Hoge` のように使用している部分を，`Hoge` に置換
+
+## 今後開発する機能
+- 複数のパッケージからライブラリを読めるようにする
 
 ## Install
 ```
@@ -23,7 +46,7 @@ import (
 	"fmt"
 	"os"
 
-	monkukui "a/lib"
+	alib "a/lib"
 )
 
 func main() {
@@ -33,7 +56,7 @@ func main() {
 
 	var n, m int
 	fmt.Fscan(r, &n, &m)
-	uf := monkukui.NewUnionFind(n)
+	uf := alib.NewUnionFind(n)
 
 	for i := 0; i < m; i++ {
 		var a, b int
@@ -138,33 +161,33 @@ import (
 	"os"
 )
 
-func generated_monkukui_swap(a int, b int) (int, int) {
+func generated_alib_swap(a int, b int) (int, int) {
 	return b, a
 }
-func (u generated_monkukui_UnionFind) Size(x int) int {
+func (u generated_alib_UnionFind) Size(x int) int {
 	return -u.par[u.Find(x)]
 }
-func (u generated_monkukui_UnionFind) Union(x, y int) {
+func (u generated_alib_UnionFind) Union(x, y int) {
 	xr := u.Find(x)
 	yr := u.Find(y)
 	if xr == yr {
 		return
 	}
 	if u.Size(yr) < u.Size(xr) {
-		yr, xr = generated_monkukui_swap(yr, xr)
+		yr, xr = generated_alib_swap(yr, xr)
 	}
 	u.par[yr] += u.par[xr]
 	u.par[xr] = yr
 }
-func (u generated_monkukui_UnionFind) Find(x int) int {
+func (u generated_alib_UnionFind) Find(x int) int {
 	if u.par[x] < 0 {
 		return x
 	}
 	u.par[x] = u.Find(u.par[x])
 	return u.par[x]
 }
-func generated_monkukui_NewUnionFind(N int) *generated_monkukui_UnionFind {
-	u := new(generated_monkukui_UnionFind)
+func generated_alib_NewUnionFind(N int) *generated_alib_UnionFind {
+	u := new(generated_alib_UnionFind)
 	u.par = make([]int, N)
 	for i := range u.par {
 		u.par[i] = -1
@@ -172,7 +195,7 @@ func generated_monkukui_NewUnionFind(N int) *generated_monkukui_UnionFind {
 	return u
 }
 
-type generated_monkukui_UnionFind struct{ par []int }
+type generated_alib_UnionFind struct{ par []int }
 
 func main() {
 	r := bufio.NewReader(os.Stdin)
@@ -180,7 +203,7 @@ func main() {
 	defer w.Flush()
 	var n, m int
 	fmt.Fscan(r, &n, &m)
-	uf := generated_monkukui_NewUnionFind(n)
+	uf := generated_alib_NewUnionFind(n)
 	for i := 0; i < m; i++ {
 		var a, b int
 		fmt.Fscan(r, &a, &b)
@@ -204,7 +227,7 @@ import (
 	"fmt"
 	"os"
 
-	monkukui "a/lib"
+	alib "a/lib"
 )
 
 func main() {
@@ -214,7 +237,7 @@ func main() {
 
 	var n, m int
 	fmt.Fscan(r, &n, &m)
-	uf := monkukui.NewUnionFind(n)
+	uf := alib.NewUnionFind(n)
 
 	for i := 0; i < m; i++ {
 		var a, b int
