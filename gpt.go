@@ -237,7 +237,6 @@ func Generate(mainPath, libPath, genPath string) error {
 						return true
 					}
 				}
-        A
 			case token.CONST:
 				// 変数定義を削除
 				for _, spec := range node.Specs {
