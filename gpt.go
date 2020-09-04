@@ -26,22 +26,20 @@ var libPackageName string = "lib"
 
 const targetLibPath = "a/lib"
 
-func Generate(mainPath, libPath string) {
+func Generate(mainPath, libPath string) error {
 
 	// main 関数に対するコードの編集
 	mainFileSet := token.NewFileSet()
 	mainFile, err := parser.ParseFile(mainFileSet, mainPath, nil, 0)
 	if err != nil {
-		log.Print(err)
-		return
+		return err
 	}
 
 	for _, spec := range mainFile.Imports {
 		path := spec.Path.Value
 		path, err := strconv.Unquote(spec.Path.Value)
 		if err != nil {
-			// TODO error ハンドリング
-			return
+			return err
 		}
 		if path == targetLibPath {
 			if spec.Name != nil {
@@ -55,8 +53,7 @@ func Generate(mainPath, libPath string) {
 	fset := token.NewFileSet()
 	dir, err := parser.ParseDir(fset, libPath, nil, 0)
 	if err != nil {
-		log.Print(err)
-		return
+		return err
 	}
 
 	var decls []ast.Decl
@@ -279,8 +276,7 @@ func Generate(mainPath, libPath string) {
 	file, err := os.Create("./gen/gen.go")
 	defer file.Close()
 	if err != nil {
-		log.Print(err)
-		return
+		return err
 	}
 
 	f, _ = m.(*ast.File)
@@ -290,11 +286,11 @@ func Generate(mainPath, libPath string) {
 
 	f, _, err = goimportsToFile(f)
 	if err != nil {
-		log.Print(err)
-		return
+		return err
 	}
 	generateCode(file, f)
 	fmt.Println("gpt: generate code successfully✨")
+	return nil
 }
 
 func generateCode(w io.Writer, node interface{}) {

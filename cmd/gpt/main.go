@@ -16,5 +16,8 @@ func main() {
 		return
 	}
 
-	gpt.Generate(*mainFilePath, *libDirPath)
+  err := gpt.Generate(*mainFilePath, *libDirPath)
+  if err != nil {
+    log.Print(err)
+  }
 }
