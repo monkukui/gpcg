@@ -5,8 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
-	"strconv"
-	"strings"
+	"os/exec"
 
 	"go/ast"
 	"go/format"
@@ -19,7 +18,8 @@ import (
 )
 
 const doc = "gpt is ..."
-const lib = "a"
+
+const libPackageName = "lib"
 
 func Generate(mainPath, libPath string) {
 
@@ -29,16 +29,6 @@ func Generate(mainPath, libPath string) {
 	if err != nil {
 		log.Print(err)
 		return
-	}
-
-	// import 文を集計する
-	var imports []*ast.ImportSpec
-	for _, v := range dir {
-		for _, f := range v.Files {
-			for _, spec := range f.Imports {
-				imports = append(imports, spec)
-			}
-		}
 	}
 
 	var decls []ast.Decl
@@ -57,14 +47,7 @@ func Generate(mainPath, libPath string) {
 				},
 			}
 
-			info := &types.Info{
-				Types:  map[ast.Expr]types.TypeAndValue{},
-				Defs:   map[*ast.Ident]types.Object{},
-				Uses:   map[*ast.Ident]types.Object{},
-				Scopes: map[ast.Node]*types.Scope{},
-			}
-
-			pkg, err := conf.Check("lib", fset, []*ast.File{f}, info)
+			pkg, err := conf.Check("lib", fset, []*ast.File{f}, &types.Info{})
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -151,7 +134,11 @@ func Generate(mainPath, libPath string) {
 		return
 	}
 
-	insertImportsFlag := false
+	// main 関数の import に関する処理
+	// import (
+	//   tourist "a/lib" <- これを取得する
+	// )
+
 	insertDeclsFlag := false
 	n := astutil.Apply(mainFile, func(cr *astutil.Cursor) bool {
 		switch node := cr.Node().(type) {
@@ -165,27 +152,6 @@ func Generate(mainPath, libPath string) {
 			}
 			insertDeclsFlag = true
 
-		case *ast.ImportSpec:
-			// import a/lib など，ローカルからインポートしている文を削除する
-			path, err := strconv.Unquote(node.Path.Value)
-			if err != nil {
-				return true
-			}
-			if strings.HasSuffix(path, "lib") {
-				cr.Delete()
-			}
-
-			// ImportSpec の一番最初の時，蓄えた import 文を後ろに挿入していく
-			if insertImportsFlag {
-				return true
-			}
-			if cr.Index() == 0 {
-				for _, spec := range imports {
-					cr.InsertAfter(spec)
-				}
-			}
-			insertImportsFlag = true
-
 		case *ast.SelectorExpr:
 			// lib.HogeHuga() -> HogeHuga() に置換する
 			// lib.HogeHuga -> HogeHuga に置換する
@@ -197,14 +163,22 @@ func Generate(mainPath, libPath string) {
 			}
 
 			// 識別子の名前が lib の時は，現在のノードをごっそり node.Sel に置換
-			if ident.Name == "lib" {
-				rename(&node.Sel.Name, "lib")
+			if ident.Name == libPackageName {
+				rename(&node.Sel.Name, libPackageName)
 				cr.Replace(node.Sel)
 			}
 		}
 
 		return true
 	}, nil)
+
+	// 一旦ファイルに書き込む -> goimports をかける -> 再度 ast.File として読み込む
+	f, _ := n.(*ast.File)
+	if f == nil {
+		log.Fatal("can not open the file")
+	}
+
+	f, mainFileSet, err = goimportsToFile(f)
 
 	conf := types.Config{
 		Importer: importer.Default(),
@@ -220,10 +194,6 @@ func Generate(mainPath, libPath string) {
 		Scopes: map[ast.Node]*types.Scope{},
 	}
 
-	f, _ := n.(*ast.File)
-	if f == nil {
-		log.Fatal("can not open the file")
-	}
 	_, err = conf.Check("lib", mainFileSet, []*ast.File{f}, info)
 	if err != nil {
 		log.Fatal(err)
@@ -234,7 +204,7 @@ func Generate(mainPath, libPath string) {
 	// 1. 関数定義（e.g. func ModPow() int など）
 	// 2. 構造体定義 (e.g. type UnionFind struct など)
 	// 3. 変数定義（e.g. var n int など）
-	m := astutil.Apply(n, func(cr *astutil.Cursor) bool {
+	m := astutil.Apply(f, func(cr *astutil.Cursor) bool {
 		switch node := cr.Node().(type) {
 		case *ast.FuncDecl:
 			// 関数定義
@@ -334,4 +304,37 @@ func isUsed(info *types.Info, ident *ast.Ident) bool {
 	}
 
 	return false
+}
+
+func goimportsToFile(f *ast.File) (*ast.File, *token.FileSet, error) {
+
+	// 1. 適当にファイル出力をする
+	fmt.Println("gpt: output tmp file ...")
+	outputFile, err := os.Create("./gen/tmp.go")
+	defer outputFile.Close()
+	if err != nil {
+		return nil, nil, err
+	}
+	generateCode(outputFile, f)
+
+	// 2. 出力されたファイルに goimports をかける
+	fmt.Println("gpt: exec goimports ...")
+	// os.Chdir("./gen")
+
+	_, err = exec.Command("goimports", "-w", "./gen/tmp.go").Output()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	// 3. 再度ファイルを読み込む
+	fmt.Println("gpt: reading tmp.go ...")
+	fset := token.NewFileSet()
+	retFile, err := parser.ParseFile(fset, "./gen/tmp.go", nil, 0)
+	if err != nil {
+		log.Print(err)
+		return nil, nil, err
+	}
+
+	return retFile, fset, nil
 }
