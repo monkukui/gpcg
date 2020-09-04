@@ -7,10 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	// "sync"
-	// "reflect"
-	// "bufio"
-	// "bytes"
 
 	"go/ast"
 	"go/format"
@@ -33,14 +29,6 @@ var Analyzer = &analysis.Analyzer{
 	Run:  run,
 }
 
-func generateCode(w io.Writer, node interface{}) {
-	format.Node(w, token.NewFileSet(), node)
-}
-
-func rename(name *string, packageName string) {
-	*name = "generated_" + packageName + "_" + *name
-}
-
 func run(pass *analysis.Pass) (interface{}, error) {
 
 	// 競技プログラミングライブラリを全て捜査して，必要な情報を取ってくる
@@ -60,10 +48,13 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		}
 	}
 
-	// ----
 	var decls []ast.Decl
 	for _, v := range dir {
 		for _, f := range v.Files {
+			if f.Name == nil {
+				continue
+			}
+
 			packageName := f.Name.Name
 
 			conf := types.Config{
@@ -85,12 +76,13 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				log.Fatal(err)
 			}
 
-			// 名前が衝突しないように，全ての識別子を置き換える
-			// ただし，基本型は除く
-
 			packageScope := pkg.Scope()
-			// fmt.Println("packageScope = ", packageScope)
-			// decl を集計する
+
+			// 1. 名前が衝突しないように，識別子の名前を rename する（e.g. UnionFind -> generated_lib_UnionFind）
+			// 2. コード生成のために Decl 文を集約する
+			// a. 関数定義（ただし，レシーバを持つ関数は rename しない）
+			// b. 構造体
+			// c. 変数定義
 			ast.Inspect(f, func(n ast.Node) bool {
 				switch n := n.(type) {
 				case *ast.Ident:
@@ -138,7 +130,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				case *ast.FuncDecl:
 					// 関数定義は全て集計
 					if n.Recv != nil {
-						// レシーバ名を変更 （TODO 若干怪しい，レシーバ名は，このライブラリで定義された構造体であることを仮定においている）
+						// レシーバ名を変更
 						for _, field := range n.Recv.List {
 							ident := field.Type.(*ast.Ident)
 							if ident == nil {
@@ -230,16 +222,20 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		Scopes: map[ast.Node]*types.Scope{},
 	}
 
-	ff, _ := n.(*ast.File)
-	if ff == nil {
-		panic("file じゃありません")
+	f, _ := n.(*ast.File)
+	if f == nil {
+		log.Fatal("can not open the file")
 	}
-	_, err = conf.Check("lib", pass.Fset, []*ast.File{ff}, info)
+	_, err = conf.Check("lib", pass.Fset, []*ast.File{f}, info)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// ここから，定義だけされているが使われていない，関数，構造体，変数を消していく
+	// 定義だけされているが使われていない，関数，構造体，変数を消していく
+	// 使用されていない識別子を cr.Delete() で削除する
+	// 1. 関数定義（e.g. func ModPow() int など）
+	// 2. 構造体定義 (e.g. type UnionFind struct など)
+	// 3. 変数定義（e.g. var n int など）
 	m := astutil.Apply(n, func(cr *astutil.Cursor) bool {
 		switch node := cr.Node().(type) {
 		case *ast.FuncDecl:
@@ -253,7 +249,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			case token.IMPORT:
 				return true
 			case token.TYPE:
-				// 構造体の定義を rename
+				// 構造体の定義を削除
 				for _, spec := range node.Specs {
 					spec, _ := spec.(*ast.TypeSpec)
 					if spec == nil {
@@ -265,7 +261,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					}
 				}
 			case token.CONST:
-				// 変数定義を rename
+				// 変数定義を削除
 				for _, spec := range node.Specs {
 					spec, _ := spec.(*ast.ValueSpec)
 					if spec == nil {
@@ -279,7 +275,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					}
 				}
 			case token.VAR:
-				// 変数定義を rename
+				// 変数定義を削除
 				for _, spec := range node.Specs {
 					spec, _ := spec.(*ast.ValueSpec)
 					if spec == nil {
@@ -294,15 +290,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				}
 			}
 		}
-		/*ident, _ := cr.Node().(*ast.Ident)
-		  if ident == nil {
-		    return true
-		  }
-
-		  if !isUsed(info, ident) {
-		    fmt.Println("ident = ", ident)
-		  }
-		*/
 
 		return true
 	}, nil)
@@ -317,6 +304,14 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	fmt.Println("gpt: generate code successfully✨")
 
 	return nil, nil
+}
+
+func generateCode(w io.Writer, node interface{}) {
+	format.Node(w, token.NewFileSet(), node)
+}
+
+func rename(name *string, packageName string) {
+	*name = "generated_" + packageName + "_" + *name
 }
 
 func isUsed(info *types.Info, ident *ast.Ident) bool {
