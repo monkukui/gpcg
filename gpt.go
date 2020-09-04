@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	// "os/exec"
+	"strconv"
 
 	"go/ast"
 	"go/format"
@@ -21,9 +22,34 @@ import (
 
 const doc = "gpt is ..."
 
-const libPackageName = "lib"
+var libPackageName string = "lib"
+
+const targetLibPath = "a/lib"
 
 func Generate(mainPath, libPath string) {
+
+	// main 関数に対するコードの編集
+	mainFileSet := token.NewFileSet()
+	mainFile, err := parser.ParseFile(mainFileSet, mainPath, nil, 0)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	for _, spec := range mainFile.Imports {
+		path := spec.Path.Value
+		path, err := strconv.Unquote(spec.Path.Value)
+		if err != nil {
+			// TODO error ハンドリング
+			return
+		}
+		if path == targetLibPath {
+			if spec.Name != nil {
+				libPackageName = spec.Name.Name
+				spec.Name = nil
+			}
+		}
+	}
 
 	// 競技プログラミングライブラリを全て捜査して，必要な情報を取ってくる
 	fset := token.NewFileSet()
@@ -39,8 +65,6 @@ func Generate(mainPath, libPath string) {
 			if f.Name == nil {
 				continue
 			}
-
-			packageName := f.Name.Name
 
 			conf := types.Config{
 				Importer: importer.Default(),
@@ -65,7 +89,7 @@ func Generate(mainPath, libPath string) {
 				switch n := n.(type) {
 				case *ast.Ident:
 					if obj := packageScope.Lookup(n.Name); obj != nil {
-						rename(&n.Name, packageName)
+						rename(&n.Name, libPackageName)
 					}
 				case *ast.GenDecl:
 					switch n.Tok {
@@ -78,7 +102,7 @@ func Generate(mainPath, libPath string) {
 							if spec == nil {
 								return true
 							}
-							rename(&spec.Name.Name, packageName)
+							rename(&spec.Name.Name, libPackageName)
 						}
 					case token.CONST:
 						// 変数定義を rename
@@ -88,7 +112,7 @@ func Generate(mainPath, libPath string) {
 								return true
 							}
 							for _, ident := range spec.Names {
-								rename(&ident.Name, packageName)
+								rename(&ident.Name, libPackageName)
 							}
 						}
 					case token.VAR:
@@ -99,7 +123,7 @@ func Generate(mainPath, libPath string) {
 								return true
 							}
 							for _, ident := range spec.Names {
-								rename(&ident.Name, packageName)
+								rename(&ident.Name, libPackageName)
 							}
 						}
 					}
@@ -114,11 +138,11 @@ func Generate(mainPath, libPath string) {
 							if ident == nil {
 								return true
 							}
-							rename(&ident.Name, packageName)
+							rename(&ident.Name, libPackageName)
 						}
 					} else {
 						// レシーバを持たない関数定義（構造体のメンバ変数以外）は，関数名を変更
-						rename(&n.Name.Name, packageName)
+						rename(&n.Name.Name, libPackageName)
 					}
 					decls = append(decls, n)
 				}
@@ -126,14 +150,6 @@ func Generate(mainPath, libPath string) {
 				return true
 			})
 		}
-	}
-
-	// main 関数に対するコードの編集
-	mainFileSet := token.NewFileSet()
-	mainFile, err := parser.ParseFile(mainFileSet, mainPath, nil, 0)
-	if err != nil {
-		log.Print(err)
-		return
 	}
 
 	insertDeclsFlag := false
@@ -327,14 +343,6 @@ func goimportsToFile(f *ast.File) (*ast.File, *token.FileSet, error) {
 
 	// 2. 出力されたファイルに goimports をかける
 	fmt.Println("gpt: exec goimports ...")
-	/*
-		_, err = exec.Command("goimports", "-w", "./gen/tmp.go").Output()
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
-	*/
-
 	generatedFile, err := os.Open("./gen/tmp1.go")
 	defer generatedFile.Close()
 	if err != nil {

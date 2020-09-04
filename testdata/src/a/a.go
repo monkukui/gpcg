@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"a/lib"
+	monkukui "a/lib"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 
 	var n, m int
 	fmt.Fscan(r, &n, &m)
-	uf := lib.NewUnionFind(n)
+	uf := monkukui.NewUnionFind(n)
 
 	for i := 0; i < m; i++ {
 		var a, b int
