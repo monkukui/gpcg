@@ -1,36 +1,17 @@
 package main
 
 import (
-	"a/lib"
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 )
 
-var (
-	generated_lib_v1 = 1
-	generated_lib_v2 = 2
-	generated_lib_v3 = 3
-)
-
-const generated_lib_huga = 100
-
-var generated_lib_hoge = 10
-
-func generated_lib_unUsedFunction() string {
-	return "I am unused unexported function"
-}
-func generated_lib_UnUsedFunction() string {
-	return "I am unused exported function"
-}
 func generated_lib_swap(a int, b int) (int, int) {
 	return b, a
 }
 func (u generated_lib_UnionFind) Size(x int) int {
 	return -u.par[u.Find(x)]
-}
-func (u generated_lib_UnionFind) Same(x, y int) bool {
-	return u.Find(x) == u.Find(y)
 }
 func (u generated_lib_UnionFind) Union(x, y int) {
 	xr := u.Find(x)
@@ -61,11 +42,7 @@ func generated_lib_NewUnionFind(N int) *generated_lib_UnionFind {
 }
 
 type generated_lib_UnionFind struct{ par []int }
-type generated_lib_UnUsedStruct struct{ UnUsed int }
 
-func generated_lib_ModPow() int64 {
-	return int64(math.Max(1, 2))
-}
 func main() {
 	r := bufio.NewReader(os.Stdin)
 	w := bufio.NewWriter(os.Stdout)

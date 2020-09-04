@@ -271,7 +271,18 @@ func Generate(mainPath, libPath string) {
 		log.Print(err)
 		return
 	}
-	generateCode(file, m)
+
+	f, _ = m.(*ast.File)
+	if f == nil {
+		log.Fatal("can not open the file")
+	}
+
+	f, _, err = goimportsToFile(f)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	generateCode(file, f)
 	fmt.Println("gpt: generate code successfully✨")
 }
 
