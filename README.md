@@ -14,10 +14,12 @@ main.go から依存関係をたどって，single file に自動でまとめて
 ### 初級編
 - [x] import しているファイルを見つける
 - [x] import しているファイルの内容を全てベタ張り
-- [ ] import 文を削除
-- [ ] import 先の import も取ってくる
-- [ ] import の重複削除
+- [x] import 文を削除
+- [x] import の重複削除
 
 ### 中級編（ここまでやりたい）
-- [ ] import している && 使われている関数と構造体だけを取ってくる
+- [x] import している && 使われている関数と構造体だけを取ってくる
 - [ ] import 先でさらに依存関係があったら，それも取ってくる（Prim 法は Union Find を使う，など）
+
+
+## Usage
