@@ -21,11 +21,11 @@ import (
 const doc = "gpt is ..."
 const lib = "a"
 
-func Generate() {
+func Generate(mainPath, libPath string) {
 
 	// 競技プログラミングライブラリを全て捜査して，必要な情報を取ってくる
 	fset := token.NewFileSet()
-	dir, err := parser.ParseDir(fset, "testdata/src/a/lib", nil, 0)
+	dir, err := parser.ParseDir(fset, libPath, nil, 0)
 	if err != nil {
 		log.Print(err)
 		return
@@ -145,7 +145,11 @@ func Generate() {
 
 	// main 関数に対するコードの編集
 	mainFileSet := token.NewFileSet()
-	mainFile, err := parser.ParseFile(mainFileSet, "testdata/src/a/a.go", nil, 0)
+	mainFile, err := parser.ParseFile(mainFileSet, mainPath, nil, 0)
+	if err != nil {
+		log.Print(err)
+		return
+	}
 
 	insertImportsFlag := false
 	insertDeclsFlag := false

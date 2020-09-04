@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	gpt.Generate()
+	gpt.Generate("testdata/src/a/a.go", "testdata/src/a/lib")
 }
