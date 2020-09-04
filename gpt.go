@@ -26,7 +26,7 @@ var libPackageName string = "lib"
 
 const targetLibPath = "a/lib"
 
-func Generate(mainPath, libPath string) error {
+func Generate(mainPath, libPath, genPath string) error {
 
 	// main 関数に対するコードの編集
 	mainFileSet := token.NewFileSet()
@@ -273,7 +273,7 @@ func Generate(mainPath, libPath string) error {
 	}, nil)
 
 	// コードを生成して終了
-	file, err := os.Create("./gen/gen.go")
+	file, err := os.Create(genPath)
 	defer file.Close()
 	if err != nil {
 		return err
@@ -329,7 +329,6 @@ func isUsed(info *types.Info, ident *ast.Ident) bool {
 func goimportsToFile(f *ast.File) (*ast.File, *token.FileSet, error) {
 
 	// 1. 適当にファイル出力をする
-	fmt.Println("gpt: output tmp1 file ...")
 	outputFile, err := os.Create("./gen/tmp1.go")
 	defer outputFile.Close()
 	if err != nil {
@@ -338,7 +337,6 @@ func goimportsToFile(f *ast.File) (*ast.File, *token.FileSet, error) {
 	generateCode(outputFile, f)
 
 	// 2. 出力されたファイルに goimports をかける
-	fmt.Println("gpt: exec goimports ...")
 	generatedFile, err := os.Open("./gen/tmp1.go")
 	defer generatedFile.Close()
 	if err != nil {
@@ -354,7 +352,6 @@ func goimportsToFile(f *ast.File) (*ast.File, *token.FileSet, error) {
 	}
 
 	// 3. フォーマットされたコードを書き込む
-	fmt.Println("gpt: writing tmp2.go ...")
 	formatedFile, err := os.Create("./gen/tmp2.go")
 	defer formatedFile.Close()
 	if err != nil {
@@ -363,7 +360,6 @@ func goimportsToFile(f *ast.File) (*ast.File, *token.FileSet, error) {
 	formatedFile.Write(formatedCode)
 
 	// 4. 再度ファイルを読み込む
-	fmt.Println("gpt: reading tmp2.go ...")
 	fset := token.NewFileSet()
 	retFile, err := parser.ParseFile(fset, "./gen/tmp2.go", nil, 0)
 	if err != nil {
