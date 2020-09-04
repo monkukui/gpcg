@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	// "reflect"
 
 	"go/ast"
 	"go/format"
@@ -27,14 +28,14 @@ const targetLibPath = "a/lib"
 
 func Generate(mainPath, libPath, genPath string) error {
 
-	// main 関数を取得 
+	// main 関数を取得
 	mainFileSet := token.NewFileSet()
 	mainFile, err := parser.ParseFile(mainFileSet, mainPath, nil, 0)
 	if err != nil {
 		return err
 	}
 
-  // 名前付きのローカルからの import 名を取得
+	// 名前付きのローカルからの import 名を取得
 	for _, spec := range mainFile.Imports {
 		path := spec.Path.Value
 		path, err := strconv.Unquote(spec.Path.Value)
@@ -157,8 +158,8 @@ func Generate(mainPath, libPath, genPath string) error {
 			if insertDeclsFlag {
 				return true
 			}
-			for _, spec := range decls {
-				cr.InsertAfter(spec)
+			for _, decl := range decls {
+				cr.InsertAfter(decl)
 			}
 			insertDeclsFlag = true
 
@@ -240,31 +241,46 @@ func Generate(mainPath, libPath, genPath string) error {
 				}
 			case token.CONST:
 				// 変数定義を削除
+				allUnUsed := true
 				for _, spec := range node.Specs {
 					spec, _ := spec.(*ast.ValueSpec)
 					if spec == nil {
 						return true
 					}
 					for _, ident := range spec.Names {
-						if !isUsed(info, ident) {
-							cr.Delete()
-							return true
+						if isUsed(info, ident) {
+							allUnUsed = false
+							break
 						}
+					}
+					if !allUnUsed {
+						break
 					}
 				}
+				if allUnUsed {
+					cr.Delete()
+				}
+
 			case token.VAR:
 				// 変数定義を削除
+				allUnUsed := true
 				for _, spec := range node.Specs {
 					spec, _ := spec.(*ast.ValueSpec)
 					if spec == nil {
 						return true
 					}
 					for _, ident := range spec.Names {
-						if !isUsed(info, ident) {
-							cr.Delete()
-							return true
+						if isUsed(info, ident) {
+							allUnUsed = false
+							break
 						}
 					}
+					if !allUnUsed {
+						break
+					}
+				}
+				if allUnUsed {
+					cr.Delete()
 				}
 			}
 		}

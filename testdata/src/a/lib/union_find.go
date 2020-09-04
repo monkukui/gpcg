@@ -59,12 +59,21 @@ func unUsedFunction() string {
 
 // token.VAR
 var hoge = 10
+var Hoge = 10
 
 // token.CONST
 const huga = 100
+const Huga = 100
 
 var (
 	v1 = 1
-	v2 = 2
+	V2 = 2 // exported
 	v3 = 3
+	v4 = 4
+)
+
+var (
+	UnUsed1 = 1
+	UnUsed2 = 2
+	UnUsed3 = 3
 )
