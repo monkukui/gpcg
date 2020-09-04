@@ -5,7 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
+	// "os/exec"
 
 	"go/ast"
 	"go/format"
@@ -13,8 +13,10 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"io/ioutil"
 
 	"golang.org/x/tools/go/ast/astutil"
+	"golang.org/x/tools/imports"
 )
 
 const doc = "gpt is ..."
@@ -309,8 +311,8 @@ func isUsed(info *types.Info, ident *ast.Ident) bool {
 func goimportsToFile(f *ast.File) (*ast.File, *token.FileSet, error) {
 
 	// 1. 適当にファイル出力をする
-	fmt.Println("gpt: output tmp file ...")
-	outputFile, err := os.Create("./gen/tmp.go")
+	fmt.Println("gpt: output tmp1 file ...")
+	outputFile, err := os.Create("./gen/tmp1.go")
 	defer outputFile.Close()
 	if err != nil {
 		return nil, nil, err
@@ -319,18 +321,41 @@ func goimportsToFile(f *ast.File) (*ast.File, *token.FileSet, error) {
 
 	// 2. 出力されたファイルに goimports をかける
 	fmt.Println("gpt: exec goimports ...")
-	// os.Chdir("./gen")
+	/*
+		_, err = exec.Command("goimports", "-w", "./gen/tmp.go").Output()
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+	*/
 
-	_, err = exec.Command("goimports", "-w", "./gen/tmp.go").Output()
+	generatedFile, err := os.Open("./gen/tmp1.go")
+	defer generatedFile.Close()
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		return nil, nil, err
+	}
+	generatedCode, err := ioutil.ReadAll(generatedFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	formatedCode, err := imports.Process("tmp1.go", generatedCode, nil)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	// 3. 再度ファイルを読み込む
-	fmt.Println("gpt: reading tmp.go ...")
+	// 3. フォーマットされたコードを書き込む
+	fmt.Println("gpt: writing tmp2.go ...")
+	formatedFile, err := os.Create("./gen/tmp2.go")
+	defer formatedFile.Close()
+	if err != nil {
+		return nil, nil, err
+	}
+	formatedFile.Write(formatedCode)
+
+	// 4. 再度ファイルを読み込む
+	fmt.Println("gpt: reading tmp2.go ...")
 	fset := token.NewFileSet()
-	retFile, err := parser.ParseFile(fset, "./gen/tmp.go", nil, 0)
+	retFile, err := parser.ParseFile(fset, "./gen/tmp2.go", nil, 0)
 	if err != nil {
 		log.Print(err)
 		return nil, nil, err
