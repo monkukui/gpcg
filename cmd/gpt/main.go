@@ -2,8 +2,8 @@ package main
 
 import (
 	"gpt"
-	"golang.org/x/tools/go/analysis/unitchecker"
 )
 
-func main() { unitchecker.Main(gpt.Analyzer) }
-
+func main() {
+	gpt.Generate()
+}
