@@ -27,13 +27,14 @@ const targetLibPath = "a/lib"
 
 func Generate(mainPath, libPath, genPath string) error {
 
-	// main 関数に対するコードの編集
+	// main 関数を取得 
 	mainFileSet := token.NewFileSet()
 	mainFile, err := parser.ParseFile(mainFileSet, mainPath, nil, 0)
 	if err != nil {
 		return err
 	}
 
+  // 名前付きのローカルからの import 名を取得
 	for _, spec := range mainFile.Imports {
 		path := spec.Path.Value
 		path, err := strconv.Unquote(spec.Path.Value)
