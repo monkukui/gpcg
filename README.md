@@ -2,7 +2,7 @@
 
 `gpt` combine multiple files into one
 
-以下のような構造の，複数ファイルにまたがるコードを一つにまとめる．
+以下のような構造の，複数ファイルにまたがるコード郡を一つにまとめる．
 
 ```
 testdata/src
