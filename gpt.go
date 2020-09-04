@@ -136,11 +136,6 @@ func Generate(mainPath, libPath string) {
 		return
 	}
 
-	// main 関数の import に関する処理
-	// import (
-	//   tourist "a/lib" <- これを取得する
-	// )
-
 	insertDeclsFlag := false
 	n := astutil.Apply(mainFile, func(cr *astutil.Cursor) bool {
 		switch node := cr.Node().(type) {
