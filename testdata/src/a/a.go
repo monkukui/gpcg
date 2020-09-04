@@ -18,6 +18,8 @@ func main() {
 	// fmt.Fprintln(w, lib.v3)
 	// fmt.Fprintln(w, lib.v4)
 
+	fmt.Fprintln(w, "alib.C4 = ", alib.C4)
+
 	fmt.Fprintln(w, "alib.Hoge = ", alib.Hoge)
 	fmt.Fprintln(w, "alib.Huga = ", alib.Huga)
 

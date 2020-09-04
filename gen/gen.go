@@ -6,6 +6,13 @@ import (
 	"os"
 )
 
+const (
+	generated_alib_C1 = 1
+	generated_alib_C2 = 2
+	generated_alib_C3 = 3
+	generated_alib_C4 = 4
+)
+
 var (
 	generated_alib_v1 = 1
 	generated_alib_V2 = 2
@@ -58,6 +65,7 @@ func main() {
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 	fmt.Fprintln(w, "alib.V2 = ", generated_alib_V2)
+	fmt.Fprintln(w, "alib.C4 = ", generated_alib_C4)
 	fmt.Fprintln(w, "alib.Hoge = ", generated_alib_Hoge)
 	fmt.Fprintln(w, "alib.Huga = ", generated_alib_Huga)
 	var n, m int
@@ -95,14 +103,15 @@ func main() {
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 
-  // fmt.Fprintln(w, lib.v1)
-  fmt.Fprintln(w, "alib.V2 = ", alib.V2)
-  // fmt.Fprintln(w, lib.v3)
-  // fmt.Fprintln(w, lib.v4)
+	// fmt.Fprintln(w, lib.v1)
+	fmt.Fprintln(w, "alib.V2 = ", alib.V2)
+	// fmt.Fprintln(w, lib.v3)
+	// fmt.Fprintln(w, lib.v4)
 
-  fmt.Fprintln(w, "alib.Hoge = ", alib.Hoge)
-  fmt.Fprintln(w, "alib.Huga = ", alib.Huga)
+  fmt.Fprintln(w, "alib.C4 = ", alib.C4)
 
+	fmt.Fprintln(w, "alib.Hoge = ", alib.Hoge)
+	fmt.Fprintln(w, "alib.Huga = ", alib.Huga)
 
 	var n, m int
 	fmt.Fscan(r, &n, &m)
@@ -124,7 +133,7 @@ func main() {
 		}
 	}
 
-  fmt.Fprintln(w, "ans = ", ans)
+	fmt.Fprintln(w, "ans = ", ans)
 }
 
 */

@@ -73,7 +73,20 @@ var (
 )
 
 var (
-	UnUsed1 = 1
-	UnUsed2 = 2
-	UnUsed3 = 3
+	UnUsedVar1 = 1
+	UnUsedVar2 = 2
+	UnUsedVar3 = 3
+)
+
+const (
+	C1 = 1
+	C2 = 2
+	C3 = 3
+	C4 = 4
+)
+
+const (
+	UnUsedConst1 = 1
+	UnUsedConst2 = 2
+	UnUsedConst3 = 3
 )
