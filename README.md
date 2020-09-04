@@ -9,7 +9,7 @@ TODO かく
 
 ## Usage
 ```
-$ go vet -vettool=`which gpt` -main <main_file_path> -lib <library_dir_path> -gen <gen_file_path>
+$ go run cmd/gpt/main.go -main testdata/src/a/a.go -lib testdata/src/a/lib -gen gen/gen.go
 ```
 
 ## Example
