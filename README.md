@@ -1,6 +1,28 @@
 # gpt（go-procon-tools）
 
-`gpt` combine multiple files into oneA
+`gpt` combine multiple files into one
+
+以下のような構造の，複数ファイルにまたがるコードを一つにまとめる．
+
+```
+testdata/src
+└── a
+    ├── a.go // コンテスト中に書くコード
+    ├── expected
+    │   └── expected.go
+    ├── go.mod
+    └── lib  // 事前に書いている，競プロ用のアルゴリズムライブラリ
+        ├── mod_inv.go
+        └── union_find.go
+```
+
+## 主な機能
+- `a.go` で使用している，1.関数，2.構造体，3.変数を `a.go` に追加する形でコード生成
+- `lib` 以下で定義された識別子については，名前の衝突を避けるために `generated_lib_` を `prefix` に追加
+- `a.go` で `lib.Hoge` のように使用している部分を，`Hoge` に置換
+
+## 今後開発する機能
+- 複数のパッケージからライブラリを読めるようにする
 
 ## Install
 ```
