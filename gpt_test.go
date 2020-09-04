@@ -5,16 +5,14 @@ import (
 	"os"
 	"testing"
 
-	"io/ioutil"
-
-	"golang.org/x/tools/go/analysis/analysistest"
 	"gpt"
+	"io/ioutil"
 )
 
 // TestAnalyzer is a test for Analyzer.
-func TestAnalyzer(t *testing.T) {
-	testdata := analysistest.TestData()
-	analysistest.Run(t, testdata, gpt.Analyzer, "a")
+func TestGenerator(t *testing.T) {
+
+	gpt.Generate("testdata/src/a/a.go", "testdata/src/a/lib")
 
 	generatedFile, err := os.Open("./gen/gen.go")
 	defer generatedFile.Close()

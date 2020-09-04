@@ -15,27 +15,20 @@ import (
 	"go/token"
 	"go/types"
 
-	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/ast/astutil"
 )
 
 const doc = "gpt is ..."
 const lib = "a"
 
-// Analyzer is ...
-var Analyzer = &analysis.Analyzer{
-	Name: "gpt",
-	Doc:  doc,
-	Run:  run,
-}
-
-func run(pass *analysis.Pass) (interface{}, error) {
+func Generate(mainPath, libPath string) {
 
 	// 競技プログラミングライブラリを全て捜査して，必要な情報を取ってくる
 	fset := token.NewFileSet()
-	dir, err := parser.ParseDir(fset, "testdata/src/a/lib", nil, 0)
+	dir, err := parser.ParseDir(fset, libPath, nil, 0)
 	if err != nil {
-		return nil, err
+		log.Print(err)
+		return
 	}
 
 	// import 文を集計する
@@ -151,7 +144,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	// main 関数に対するコードの編集
-	mainFile := pass.Files[0]
+	mainFileSet := token.NewFileSet()
+	mainFile, err := parser.ParseFile(mainFileSet, mainPath, nil, 0)
+	if err != nil {
+		log.Print(err)
+		return
+	}
 
 	insertImportsFlag := false
 	insertDeclsFlag := false
@@ -226,7 +224,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	if f == nil {
 		log.Fatal("can not open the file")
 	}
-	_, err = conf.Check("lib", pass.Fset, []*ast.File{f}, info)
+	_, err = conf.Check("lib", mainFileSet, []*ast.File{f}, info)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -298,12 +296,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	file, err := os.Create("./gen/gen.go")
 	defer file.Close()
 	if err != nil {
-		return nil, err
+		log.Print(err)
+		return
 	}
 	generateCode(file, m)
 	fmt.Println("gpt: generate code successfully✨")
-
-	return nil, nil
 }
 
 func generateCode(w io.Writer, node interface{}) {
