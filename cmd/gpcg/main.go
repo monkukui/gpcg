@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"gpcg"
 	"log"
   "os"
   "fmt"
 
+  "github.com/monkukui/gpcg"
   "io/ioutil"
 )
 
