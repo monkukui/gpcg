@@ -28,7 +28,7 @@ gpcg は，Go で競技プログラミングをする Gopher のためのツー�
 
 ## Install
 ```
-go get github.com/monkukui/gpcg/cmd/gpcg
+go get -u github.com/monkukui/gpcg/cmd/gpcg
 ```
 
 ## How to use
