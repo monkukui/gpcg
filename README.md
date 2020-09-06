@@ -54,10 +54,152 @@ cd gpcg-sample-directory
 ```
 
 ### step 3
+ファイルを確認してください（もしくは，コードに変更を加えてください）
+[AtCoder Beginner Contest 177 D](https://atcoder.jp/contests/abc177/tasks/abc177_d) の問題を解くことを想定しています．
+使用するライブラリは `union_find.go` です．
+
+**`a.go`**
+```Go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+
+  alib "a/lib"
+)
+
+func main() {
+	r := bufio.NewReader(os.Stdin)
+	w := bufio.NewWriter(os.Stdout)
+	defer w.Flush()
+
+	var n, m int
+	fmt.Fscan(r, &n, &m)
+	uf := alib.NewUnionFind(n)
+
+	for i := 0; i < m; i++ {
+		var a, b int
+		fmt.Fscan(r, &a, &b)
+		a--
+		b--
+
+		uf.Union(a, b)
+	}
+
+	ans := 0
+	for i := 0; i < n; i++ {
+		if ans < uf.Size(i) {
+			ans = uf.Size(i)
+		}
+	}
+
+	fmt.Fprintln(w, "ans = ", ans)
+}
+```
+
+**`lib/union_find.go`
+```Go
+package lib
+
+type UnionFind struct {
+	par []int
+}
+
+func NewUnionFind(N int) *UnionFind {
+	u := new(UnionFind)
+	u.par = make([]int, N)
+	for i := range u.par {
+		u.par[i] = -1
+	}
+	return u
+}
+
+func (u UnionFind) Find(x int) int {
+	if u.par[x] < 0 {
+		return x
+	}
+	u.par[x] = u.Find(u.par[x])
+	return u.par[x]
+}
+
+func (u UnionFind) Union(x, y int) {
+	xr := u.Find(x)
+	yr := u.Find(y)
+	if xr == yr {
+		return
+	}
+	if u.Size(yr) < u.Size(xr) {
+		yr, xr = swap(yr, xr)
+	}
+	u.par[yr] += u.par[xr]
+	u.par[xr] = yr
+}
+
+func (u UnionFind) Same(x, y int) bool {
+	return u.Find(x) == u.Find(y)
+}
+
+func (u UnionFind) Size(x int) int {
+	return -u.par[u.Find(x)]
+}
+
+// not exported but used
+func swap(a int, b int) (int, int) {
+	return b, a
+}
+
+// exported but not used
+func UnUsedFunction() string {
+	return "I am unused exported function"
+}
+
+// not exported and not used
+func unUsedFunction() string {
+	return "I am unused unexported function"
+}
+
+// token.VAR
+var hoge = 10
+var Hoge = 10
+
+// token.CONST
+const huga = 100
+const Huga = 100
+
+var (
+	v1 = 1
+	V2 = 2 // exported
+	v3 = 3
+	v4 = 4
+)
+
+var (
+	UnUsedVar1 = 1
+	UnUsedVar2 = 2
+	UnUsedVar3 = 3
+)
+
+const (
+	C1 = 1
+	C2 = 2
+	C3 = 3
+	C4 = 4
+)
+
+const (
+	UnUsedConst1 = 1
+	UnUsedConst2 = 2
+	UnUsedConst3 = 3
+)
+```
 
 ### step 4
 
 いよいよ，コードを自動生成します．
+
+**`gen/gen.go`**
 ```
 gpcg -main a.go -lib lib -gen gen/gen.go
 ```
