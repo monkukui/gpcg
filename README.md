@@ -73,7 +73,7 @@ import (
 	"fmt"
 	"os"
 
-  alib "a/lib"
+	alib "a/lib"
 )
 
 func main() {
@@ -101,8 +101,9 @@ func main() {
 		}
 	}
 
-	fmt.Fprintln(w, "ans = ", ans)
+	fmt.Fprintln(w, ans)
 }
+
 ```
 
 **`lib/union_find.go`**
@@ -324,6 +325,7 @@ func main() {
 }
 
 */
+
 ```
 
 このコードは，[AtCoder Beginner Contest 177 D](https://atcoder.jp/contests/abc177/tasks/abc177_d)で提出すると AC（正当）を得られることを確認しています．
