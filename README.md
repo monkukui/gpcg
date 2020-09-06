@@ -2,7 +2,7 @@
 
 `gpcg` combine multiple files into one
 
-gpcg は，Go で競技プログラミングをする Gopher のためのツールです．
+`gpcg` は，Go で競技プログラミングをする Gopher のためのツールです．
 
 複数ファイルにまたがる Go のコードを 1 つのファイルにまとめます．
 
