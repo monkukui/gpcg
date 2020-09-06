@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"gpt"
+	"gpcg"
 	"log"
   "os"
   "fmt"
@@ -23,7 +23,7 @@ func main() {
 	}
 
   // 自動生成
-  err := gpt.Generate(*mainFilePath, *libDirPath, *genFilePath)
+  err := gpcg.Generate(*mainFilePath, *libDirPath, *genFilePath)
   if err != nil {
     log.Print(err)
   }

@@ -1,4 +1,4 @@
-package gpt_test
+package gpcg_test
 
 import (
 	"bytes"

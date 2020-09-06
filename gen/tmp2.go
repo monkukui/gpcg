@@ -6,24 +6,6 @@ import (
 	"os"
 )
 
-const (
-	generated_alib_C1 = 1
-	generated_alib_C2 = 2
-	generated_alib_C3 = 3
-	generated_alib_C4 = 4
-)
-
-var (
-	generated_alib_v1 = 1
-	generated_alib_V2 = 2
-	generated_alib_v3 = 3
-	generated_alib_v4 = 4
-)
-
-const generated_alib_Huga = 100
-
-var generated_alib_Hoge = 10
-
 func generated_alib_swap(a int, b int) (int, int) {
 	return b, a
 }
@@ -64,10 +46,6 @@ func main() {
 	r := bufio.NewReader(os.Stdin)
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
-	fmt.Fprintln(w, "alib.V2 = ", generated_alib_V2)
-	fmt.Fprintln(w, "alib.C4 = ", generated_alib_C4)
-	fmt.Fprintln(w, "alib.Hoge = ", generated_alib_Hoge)
-	fmt.Fprintln(w, "alib.Huga = ", generated_alib_Huga)
 	var n, m int
 	fmt.Fscan(r, &n, &m)
 	uf := generated_alib_NewUnionFind(n)

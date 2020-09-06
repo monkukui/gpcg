@@ -5,23 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	alib "a/lib"
+  alib "a/lib"
 )
 
 func main() {
 	r := bufio.NewReader(os.Stdin)
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
-
-	// fmt.Fprintln(w, lib.v1)
-	fmt.Fprintln(w, "alib.V2 = ", alib.V2)
-	// fmt.Fprintln(w, lib.v3)
-	// fmt.Fprintln(w, lib.v4)
-
-	fmt.Fprintln(w, "alib.C4 = ", alib.C4)
-
-	fmt.Fprintln(w, "alib.Hoge = ", alib.Hoge)
-	fmt.Fprintln(w, "alib.Huga = ", alib.Huga)
 
 	var n, m int
 	fmt.Fscan(r, &n, &m)
