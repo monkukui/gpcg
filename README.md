@@ -58,6 +58,11 @@ cd gpcg-sample-directory
 [AtCoder Beginner Contest 177 D](https://atcoder.jp/contests/abc177/tasks/abc177_d) の問題を解くことを想定しています．
 使用するライブラリは `union_find.go` です．
 
+```
+go run a.go
+```
+などをして，問題の sample が通ることを確認してください．
+
 **`a.go`**
 ```Go
 package main
@@ -99,7 +104,7 @@ func main() {
 }
 ```
 
-**`lib/union_find.go`
+**`lib/union_find.go`**
 ```Go
 package lib
 
