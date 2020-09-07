@@ -328,4 +328,4 @@ func main() {
 
 ```
 
-このコードは，[AtCoder Beginner Contest 177 D](https://atcoder.jp/contests/abc177/tasks/abc177_d)で提出すると AC（正当）を得られることを確認しています．
+このコードは，[AtCoder Beginner Contest 177 D](https://atcoder.jp/contests/abc177/tasks/abc177_d) で提出すると AC（正当）を得られることを確認しています．
